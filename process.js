@@ -157,7 +157,7 @@ var extensions = {
     TXT : ".tpl.txt"
 };
 
-Transformation.prototype.createRequireNode = function (path) {
+var createRequireNode = function (path) {
     return new UglifyJS.AST_Call({
         expression : new UglifyJS.AST_SymbolRef({
             name : "require"
@@ -168,16 +168,15 @@ Transformation.prototype.createRequireNode = function (path) {
     });
 };
 
-Transformation.prototype.addDependency = function (globalName, type, path, varName) {
+Transformation.prototype.addDependency = function (globalName, type, baseLogicalPath, varName) {
     var res = this.dependencies[globalName];
     if (!res) {
-        var path = path || getBaseLogicalPath(globalName) + extensions[type];
+        var baseLogicalPath = baseLogicalPath || getBaseLogicalPath(globalName);
         this.dependencies[globalName] = res = {
-            node : this.createRequireNode(path),
             varName : varName,
             globalName : globalName,
             type : type,
-            path : path,
+            baseLogicalPath : baseLogicalPath,
             usages : []
         };
         var classpathGlobalUsages = this.globals[globalName];
@@ -239,6 +238,7 @@ Transformation.prototype.findDependenciesIn$classpath = function (property) {
         return reportError("Expected an string litteral in $classpath", value);
     }
     this.classpath = value.value;
+    this.baseLogicalPath = getBaseLogicalPath(this.classpath);
 };
 
 Transformation.prototype.findDependenciesIn$extends = function (property) {
@@ -319,11 +319,35 @@ var createModuleDotExports = function () {
     });
 };
 
+var computeRelativePath = function (refPath, logicalPath) {
+    var refParts = refPath.split("/");
+    var targetParts = logicalPath.split("/");
+    var maxCommon = Math.min(refParts.length, targetParts.length) - 1;
+    var commonItems = 0;
+    while (commonItems < maxCommon && refParts[commonItems] == targetParts[commonItems]) {
+        commonItems++;
+    }
+    if (commonItems == 0) {
+        return logicalPath;
+    }
+    targetParts.splice(0, commonItems);
+    var parentsCount = refParts.length - 1 - commonItems;
+    if (parentsCount == 0) {
+        targetParts.unshift(".");
+    } else {
+        for (var i = 0; i < parentsCount; i++) {
+            targetParts.unshift("..");
+        }
+    }
+    return targetParts.join("/");
+};
+
 Transformation.prototype.insertRequires = function () {
     var dependencies = this.dependencies;
     for (var depName in dependencies) {
         var curDep = dependencies[depName];
-        var curNode;
+        curDep.baseRelativePath = computeRelativePath(this.baseLogicalPath, curDep.baseLogicalPath);
+        var requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
         if (curDep.varName || curDep.usages.length > 1) {
             var varName = curDep.varName || this.createVarName(curDep);
             this.insertNode(new UglifyJS.AST_Var({
@@ -331,7 +355,7 @@ Transformation.prototype.insertRequires = function () {
                     name : new UglifyJS.AST_SymbolVar({
                         name : varName
                     }),
-                    value : curDep.node
+                    value : requireNode
                 })]
             }));
             curDep.usages.forEach(function (usageNode) {
@@ -340,10 +364,10 @@ Transformation.prototype.insertRequires = function () {
                 }));
             }, this);
         } else if (curDep.usages.length == 1) {
-            this.replaceNode(curDep.usages[0], curDep.node);
+            this.replaceNode(curDep.usages[0], requireNode);
         } else {
             this.insertNode(new UglifyJS.AST_SimpleStatement({
-                body : curDep.node
+                body : requireNode
             }));
         }
     }
