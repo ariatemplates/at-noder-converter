@@ -374,7 +374,8 @@ var replaceNodeInArray = function (array, oldNode, newNode) {
     return false;
 };
 
-var replaceNodeInProperties = function (properties, parent, oldNode, newNode) {
+var replaceNodeInProperties = function (parent, oldNode, newNode) {
+    var properties = parent.CTOR.PROPS;
     for (var i = 0, l = properties.length; i < l; i++) {
         var curProperty = properties[i];
         var curValue = parent[curProperty];
@@ -393,10 +394,6 @@ var replaceNodeInProperties = function (properties, parent, oldNode, newNode) {
     }
     return false;
 };
-
-var parentProperties = ["body", "label", "condition", "init", "step", "name", "expression", "argnames", "value",
-        "alternative", "bcatch", "bfinally", "argname", "definitions", "args", "car", "cdr", "property", "left",
-        "right", "consequent", "elements", "properties", "key", "object"];
 
 Transformation.prototype.doLaterOperations = function () {
     if (!this.laterOperations) {
@@ -431,7 +428,7 @@ Transformation.prototype.replaceNode = function (nodeAndParent, newNode) {
             comments_before : []
         };
     }
-    if (replaceNodeInProperties(parentProperties, parent, node, newNode)) {
+    if (replaceNodeInProperties(parent, node, newNode)) {
         return;
     }
     reportError("Internal error: unable to find the node to replace", node);
