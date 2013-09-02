@@ -125,7 +125,7 @@ Transformation.prototype.findDependencies = function () {
     if (!(ariaDefParameter instanceof UglifyJS.AST_Object)) {
         return reportError("Expected an object litteral for the Aria definition", ariaDefParameter);
     }
-    this.addDependency("Aria", "JS", "aria/Aria", "Aria"); // a very special dependency
+    this.addDependency("Aria", "JS", "ariatemplates/aria/Aria", "Aria"); // a very special dependency
     ariaDefParameter.properties.forEach(function (property) {
         var fnName = "findDependenciesIn" + property.key;
         var fnRef = this[fnName];
@@ -144,7 +144,11 @@ Transformation.prototype.findDependencies = function () {
 };
 
 var getBaseLogicalPath = function (classpath) {
-    return classpath.replace(/\./g, '/');
+    var array = classpath.split(".");
+    if (array[0] === "aria") {
+        array.unshift("ariatemplates");
+    }
+    return array.join("/");
 };
 
 var extensions = {
@@ -463,7 +467,7 @@ Transformation.prototype.removeNode = function (nodeAndParent) {
 };
 
 var isGlobalComment = function (comment) {
-    return /copyright|license/i.test(comment);
+    return /copyright|license|jshint/i.test(comment);
 };
 
 var filterStart = function (start) {
