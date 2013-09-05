@@ -125,7 +125,7 @@ Transformation.prototype.findDependencies = function () {
     if (!(ariaDefParameter instanceof UglifyJS.AST_Object)) {
         return reportError("Expected an object litteral for the Aria definition", ariaDefParameter);
     }
-    this.addDependency("Aria", "JS", "ariatemplates/aria/Aria", "Aria"); // a very special dependency
+    this.addDependency("Aria", "JS", "ariatemplates/Aria", "Aria"); // a very special dependency
     ariaDefParameter.properties.forEach(function (property) {
         var fnName = "findDependenciesIn" + property.key;
         var fnRef = this[fnName];
@@ -146,7 +146,7 @@ Transformation.prototype.findDependencies = function () {
 var getBaseLogicalPath = function (classpath) {
     var array = classpath.split(".");
     if (array[0] === "aria") {
-        array.unshift("ariatemplates");
+        array[0] = "ariatemplates";
     }
     return array.join("/");
 };
