@@ -237,9 +237,24 @@ var findDepsInMap = function (type) {
 };
 
 Transformation.prototype.findDependenciesIn$classpath = function (property) {
+    if (this.ariaDefinitionType === "beanDefinitions") {
+        return;
+    }
     var value = property.value
     if (!(value instanceof UglifyJS.AST_String)) {
         return reportError("Expected an string litteral in $classpath", value);
+    }
+    this.classpath = value.value;
+    this.baseLogicalPath = getBaseLogicalPath(this.classpath);
+};
+
+Transformation.prototype.findDependenciesIn$package = function (property) {
+    if (this.ariaDefinitionType !== "beanDefinitions") {
+        return;
+    }
+    var value = property.value
+    if (!(value instanceof UglifyJS.AST_String)) {
+        return reportError("Expected an string litteral in $package", value);
     }
     this.classpath = value.value;
     this.baseLogicalPath = getBaseLogicalPath(this.classpath);
