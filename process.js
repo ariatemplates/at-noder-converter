@@ -25,11 +25,12 @@ module.exports = function (UglifyJS) {
     };
 
     var acceptedAriaMethods = {
+        // Don't transform resource definitions for now (as the new syntax is not supported for them):
+        // 'resourcesDefinition' : 1,
         'classDefinition' : 1,
         'interfaceDefinition' : 1,
         'beanDefinitions' : 1,
-        'tplScriptDefinition' : 1,
-        'resourcesDefinition' : 1
+        'tplScriptDefinition' : 1
     };
 
     var checkAriaDefinition = function (node) {
