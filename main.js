@@ -15,7 +15,7 @@
 
 var fs = require("fs");
 var UglifyJS = require("uglify-js");
-var processAST = require("./process");
+var processAST = require("./process")(UglifyJS);
 
 module.exports = function (file) {
     var fileContent = fs.readFileSync(file, "utf8");
