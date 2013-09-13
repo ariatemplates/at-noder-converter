@@ -21,6 +21,7 @@ module.exports = function (atpackager) {
     var ATNoderConverter = function (cfg) {
         cfg = cfg || {};
         this.files = cfg.files || ['**/*.js'];
+        this.ignoreErrors = cfg.ignoreErrors || ["alreadyConverted", "noAria"];
     };
 
     ATNoderConverter.prototype.onWriteInputFile = function (packaging, outputFile, inputFile) {
@@ -34,7 +35,9 @@ module.exports = function (atpackager) {
                 grunt.verbose.writeln("[ATNoderConverter] Converted " + inputFile.logicalPath.yellow + " successfully.");
                 inputFile.contentProvider = uglifyContentProvider; // makes sure the changed version is used
             } catch (e) {
-                grunt.log.error("[ATNoderConverter] Could not convert " + inputFile.logicalPath.yellow + ": " + e);
+                if (this.ignoreErrors.indexOf(e.code) === -1) {
+                    grunt.log.error("[ATNoderConverter] Could not convert " + inputFile.logicalPath.yellow + ": " + e);
+                }
             }
         }
     };

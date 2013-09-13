@@ -14,6 +14,12 @@
  */
 
 module.exports = function (UglifyJS) {
+    var throwError = function (msg, code) {
+        var e = new Error(msg + " (" + code + ")");
+        e.code = code;
+        throw e;
+    };
+
     var reportError = function (errorMsg, item) {
         throw new Error([errorMsg, " in ", item.start.file, ' (line ', item.start.line, ')\n ', item.print_to_string()].join(''));
     };
@@ -97,10 +103,10 @@ module.exports = function (UglifyJS) {
         ast.walk(walker);
 
         if (globals["module"] || globals["require"]) {
-            throw new Error("This file already uses 'module' or 'require'. It cannot be converted automatically. Perhaps it was already converted.");
+            throwError("This file already uses 'module' or 'require'. It cannot be converted automatically. Perhaps it was already converted.", "alreadyConverted");
         }
         if (!ariaDefinition) {
-            throw new Error("Could not find any Aria definition in this file.");
+            throwError("Could not find any Aria definition in this file.", "noAria");
         }
         this.ariaDefinition = ariaDefinition;
         this.ariaDefinitionType = ariaDefinitionType;
