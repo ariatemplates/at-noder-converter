@@ -61,8 +61,12 @@ module.exports = function (UglifyJS) {
         return true;
     };
 
-    var Transformation = function (ast) {
+    var Transformation = function (ast, sourceText) {
         this.ast = ast;
+        if (sourceText) {
+            sourceText = sourceText.replace(/\r\n?|[\n\u2028\u2029]/g, "\n").replace(/\uFEFF/g, '');
+            this.sourceText = sourceText;
+        }
     };
 
     Transformation.prototype.findAriaDefAndGlobals = function () {
@@ -369,6 +373,11 @@ module.exports = function (UglifyJS) {
     };
 
     Transformation.prototype.insertRequires = function () {
+        this.replaceNodeLater(this.ariaDefinition, new UglifyJS.AST_Assign({
+            left : createModuleDotExports(),
+            operator : "=",
+            right : this.ariaDefinition.node
+        }), this.insertModuleExportsInString);
         var dependencies = this.dependencies;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
@@ -376,7 +385,7 @@ module.exports = function (UglifyJS) {
             var requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
             if (curDep.varName || curDep.usages.length > 1) {
                 var varName = curDep.varName || this.createVarName(curDep);
-                this.insertNode(new UglifyJS.AST_Var({
+                this.insertNodeLater(new UglifyJS.AST_Var({
                     definitions : [new UglifyJS.AST_VarDef({
                         name : new UglifyJS.AST_SymbolVar({
                             name : varName
@@ -385,26 +394,21 @@ module.exports = function (UglifyJS) {
                     })]
                 }));
                 curDep.usages.forEach(function (usageNode) {
-                    this.replaceNode(usageNode, new UglifyJS.AST_SymbolRef({
+                    this.replaceNodeLater(usageNode, new UglifyJS.AST_SymbolRef({
                         name : varName
                     }));
                 }, this);
             } else if (curDep.usages.length == 1) {
-                this.replaceNode(curDep.usages[0], requireNode);
+                this.replaceNodeLater(curDep.usages[0], requireNode);
             } else {
-                this.insertNode(new UglifyJS.AST_SimpleStatement({
+                this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
                     body : requireNode
                 }));
             }
         }
-        this.replaceNode(this.ariaDefinition, new UglifyJS.AST_Assign({
-            left : createModuleDotExports(),
-            operator : "=",
-            right : this.ariaDefinition.node
-        }));
         if (this.globals.hasOwnProperty(this.classpath)) {
             this.globals[this.classpath].forEach(function (usageNode) {
-                this.replaceNode(usageNode, createModuleDotExports());
+                this.replaceNodeLater(usageNode, createModuleDotExports());
             }, this);
         }
         this.doLaterOperations();
@@ -418,7 +422,10 @@ module.exports = function (UglifyJS) {
                 } else {
                     array.splice(i, 1);
                 }
-                return true;
+                return {
+                    array : array,
+                    index : i
+                };
             }
         }
         return false;
@@ -435,31 +442,57 @@ module.exports = function (UglifyJS) {
                 } else {
                     delete parent[curProperty];
                 }
-                return true;
+                return {
+                    property : curProperty
+                };
             } else if (Array.isArray(curValue)) {
-                if (replaceNodeInArray(curValue, oldNode, newNode)) {
-                    return true;
+                var res = replaceNodeInArray(curValue, oldNode, newNode)
+                if (res) {
+                    return res;
                 }
             }
         }
         return false;
     };
 
+    var sortOperations = function (op1, op2) {
+        if (op1.position != op2.position) {
+            return op1.position - op2.position;
+        } else {
+            return op1.order - op2.order;
+        }
+    };
+
     Transformation.prototype.doLaterOperations = function () {
         if (!this.laterOperations) {
             return;
         }
+        this.laterOperations.sort(sortOperations);
         while (this.laterOperations.length > 0) {
-            var operation = this.laterOperations.shift();
+            var operation = this.laterOperations.pop();
             this[operation.method].apply(this, operation.arguments);
         }
     };
 
-    Transformation.prototype.replaceNodeLater = function () {
+    Transformation.prototype.insertNodeLater = function () {
         if (!this.laterOperations) {
             this.laterOperations = [];
         }
         this.laterOperations.push({
+            order : this.laterOperations.length,
+            position : this.findInsertPosition(),
+            method : "insertNode",
+            arguments : arguments
+        });
+    };
+
+    Transformation.prototype.replaceNodeLater = function (nodeAndParent, newNode) {
+        if (!this.laterOperations) {
+            this.laterOperations = [];
+        }
+        this.laterOperations.push({
+            order : this.laterOperations.length,
+            position : nodeAndParent.node.start.pos,
             method : "replaceNode",
             arguments : arguments
         });
@@ -469,7 +502,44 @@ module.exports = function (UglifyJS) {
         this.replaceNodeLater(nodeAndParent);
     };
 
-    Transformation.prototype.replaceNode = function (nodeAndParent, newNode) {
+    Transformation.prototype.replaceNodeInString = function (nodeAndParent, newNode, changeInfo) {
+        var node = nodeAndParent.node;
+        var sourceText = this.sourceText;
+        var newNodeText = "";
+        var start = node.start.pos;
+        var end = node.end.endpos;
+        if (newNode) {
+            newNodeText = newNode.print_to_string({
+                beautify : true
+            });
+            if (!(newNode instanceof UglifyJS.AST_Statement || newNode instanceof UglifyJS.AST_SymbolRef)) {
+                newNodeText = "(" + newNodeText + ")";
+            }
+        } else {
+            // removing a node is a bit more complex, as there can be an extra comma
+            var array = changeInfo.array;
+            if (array) {
+                var index = changeInfo.index;
+                if (index > 0) {
+                    // also remove the preceding comma if any
+                    start = array[index - 1].end.endpos;
+                } else if (array.length > 0) {
+                    // also remove the next comma if any
+                    end = array[index].start.pos;
+                }
+            }
+        }
+        this.sourceText = sourceText.substr(0, start) + newNodeText + sourceText.substr(end);
+    };
+
+    Transformation.prototype.insertModuleExportsInString = function (nodeAndParent, newNode) {
+        var node = nodeAndParent.node;
+        var pos = node.start.pos;
+        var sourceText = this.sourceText;
+        this.sourceText = sourceText.substr(0, pos) + "module.exports = " + sourceText.substr(pos);
+    };
+
+    Transformation.prototype.replaceNode = function (nodeAndParent, newNode, stringOperation) {
         var parent = nodeAndParent.parent;
         var node = nodeAndParent.node
         if (newNode && !newNode.start) {
@@ -478,7 +548,12 @@ module.exports = function (UglifyJS) {
                 comments_before : []
             };
         }
-        if (replaceNodeInProperties(parent, node, newNode)) {
+        var res = replaceNodeInProperties(parent, node, newNode);
+        if (res) {
+            if (this.sourceText) {
+                stringOperation = stringOperation || this.replaceNodeInString;
+                stringOperation.call(this, nodeAndParent, newNode, res);
+            }
             return;
         }
         reportError("Internal error: unable to find the node to replace", node);
@@ -507,20 +582,47 @@ module.exports = function (UglifyJS) {
         };
     };
 
-    Transformation.prototype.insertNode = function (node) {
-        if (!this.insertNodeCalls) {
-            this.insertNodeCalls = 0;
-            // keep the copyright comment, if any, at the very beginning of the file:
-            this.ast.start = filterStart(this.ast.start);
+    Transformation.prototype.findInsertPosition = function () {
+        if (this._insertPosition == null) {
+            var start = this.ast.start = filterStart(this.ast.start);
+            if (start && start.comments_before.length > 0) {
+                var lastComment = start.comments_before[start.comments_before.length - 1];
+                this._insertPosition = lastComment.endpos;
+            } else {
+                this._insertPosition = 0;
+            }
         }
-        this.ast.body.splice(this.insertNodeCalls, 0, node);
-        this.insertNodeCalls++;
+        return this._insertPosition;
     };
 
-    return function (ast) {
-        var scope = new Transformation(ast);
+    Transformation.prototype.insertNodeInString = function (node) {
+        var sourceText = this.sourceText;
+        var newNodeText = node.print_to_string({
+            beautify : true
+        });
+        var pos = this.findInsertPosition();
+        if (this._alreadyInsertedNode) {
+            pos += 1;
+            newNodeText += "\n";
+        } else {
+            newNodeText = "\n" + newNodeText + "\n";
+            this._alreadyInsertedNode = true;
+        }
+        this.sourceText = sourceText.substr(0, pos) + newNodeText + sourceText.substr(pos);
+    };
+
+    Transformation.prototype.insertNode = function (node) {
+        if (this.sourceText) {
+            this.insertNodeInString(node);
+        }
+        this.ast.body.splice(0, 0, node);
+    };
+
+    return function (ast, sourceText) {
+        var scope = new Transformation(ast, sourceText);
         scope.findAriaDefAndGlobals();
         scope.findDependencies();
         scope.insertRequires();
+        return scope.sourceText;
     };
 };

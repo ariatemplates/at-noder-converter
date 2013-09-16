@@ -17,7 +17,7 @@ var fs = require("fs");
 var UglifyJS = require("uglify-js");
 var processAST = require("./process")(UglifyJS);
 
-module.exports = function (file) {
+module.exports = function (file, reformat) {
     var fileContent = fs.readFileSync(file, "utf8");
     var ast;
     try {
@@ -30,12 +30,16 @@ module.exports = function (file) {
         }
         throw e;
     }
-    processAST(ast);
+    fileContent = processAST(ast, fileContent);
 
-    fileContent = ast.print_to_string({
-        comments : true,
-        beautify : true,
-        ascii_only : true
-    });
+    if (reformat) {
+        fileContent = ast.print_to_string({
+            comments : true,
+            beautify : true,
+            bracketize : true,
+            ascii_only : true
+        });
+    }
+
     fs.writeFileSync(file, fileContent);
 };

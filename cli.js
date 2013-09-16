@@ -20,6 +20,10 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
     },
     "version" : {
         description : "Displays the version number and exits."
+    },
+    "format" : {
+        boolean : true,
+        description : "Re-format the whole file instead of modifying parts of it. This can lose some comments."
     }
 });
 var argv = optimist.argv;
@@ -30,7 +34,7 @@ var convertFiles = function () {
     var errors = 0;
     argv._.forEach(function (file) {
         try {
-            converter(file);
+            converter(file, argv.format);
             successes++;
             console.log(file + ": OK");
         } catch (e) {
