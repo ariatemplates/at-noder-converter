@@ -17,12 +17,14 @@ module.exports = function (atpackager) {
     var process = require("../process")(atpackager.uglify);
     var grunt = atpackager.grunt;
     var uglifyContentProvider = atpackager.contentProviders.uglifyJS;
+    var textContentProvider = atpackager.contentProviders.textContent;
     var alreadyDoneKey = "atnoderconverter:processed:" + (new Date()).getTime();
 
     var ATNoderConverter = function (cfg) {
         cfg = cfg || {};
         this.files = cfg.files || ['**/*.js'];
         this.ignoreErrors = cfg.ignoreErrors || ["alreadyConverted", "noAria"];
+        this.stringBased = "stringBased" in cfg ? cfg.stringBased : true;
     };
 
     ATNoderConverter.prototype._convertFile = function (packaging, inputFile) {
@@ -33,12 +35,21 @@ module.exports = function (atpackager) {
             return;
         }
         inputFile[alreadyDoneKey] = true;
-        var ast = uglifyContentProvider.getAST(inputFile);
+        var stringBased = this.stringBased && (inputFile.contentProvider !== uglifyContentProvider);
+        var textContent = stringBased ? inputFile.getTextContent() : null;
+        var ast = uglifyContentProvider.getAST(inputFile, textContent);
         if (ast) {
             try {
-                process(ast);
+                textContent = process(ast, textContent);
                 grunt.verbose.writeln("[ATNoderConverter] Converted " + inputFile.logicalPath.yellow + " successfully.");
-                inputFile.contentProvider = uglifyContentProvider; // makes sure the changed version is used
+                inputFile.clearContent(); // content has changed, clear everything
+                uglifyContentProvider.setAST(inputFile, ast);
+                if (stringBased) {
+                    textContentProvider.setTextContent(inputFile, textContent);
+                    inputFile.contentProvider = textContentProvider;
+                } else {
+                    inputFile.contentProvider = uglifyContentProvider;
+                }
             } catch (e) {
                 if (this.ignoreErrors.indexOf(e.code) === -1) {
                     grunt.log.error("[ATNoderConverter] Could not convert " + inputFile.logicalPath.yellow + ": " + e);
