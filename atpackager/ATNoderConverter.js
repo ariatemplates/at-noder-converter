@@ -17,6 +17,7 @@ module.exports = function (atpackager) {
     var process = require("../process")(atpackager.uglify);
     var grunt = atpackager.grunt;
     var uglifyContentProvider = atpackager.contentProviders.uglifyJS;
+    var alreadyDoneKey = "atnoderconverter:processed:" + (new Date()).getTime();
 
     var ATNoderConverter = function (cfg) {
         cfg = cfg || {};
@@ -24,10 +25,14 @@ module.exports = function (atpackager) {
         this.ignoreErrors = cfg.ignoreErrors || ["alreadyConverted", "noAria"];
     };
 
-    ATNoderConverter.prototype.onWriteInputFile = function (packaging, outputFile, inputFile) {
+    ATNoderConverter.prototype._convertFile = function (packaging, inputFile) {
+        if (inputFile[alreadyDoneKey]) {
+            return;
+        }
         if (!inputFile.isMatch(this.files)) {
             return;
         }
+        inputFile[alreadyDoneKey] = true;
         var ast = uglifyContentProvider.getAST(inputFile);
         if (ast) {
             try {
@@ -40,6 +45,14 @@ module.exports = function (atpackager) {
                 }
             }
         }
+    };
+
+    ATNoderConverter.prototype.computeDependencies = function (packaging, inputFile) {
+        this._convertFile(packaging, inputFile);
+    };
+
+    ATNoderConverter.prototype.onWriteInputFile = function (packaging, outputFile, inputFile) {
+        this._convertFile(packaging, inputFile);
     };
     return ATNoderConverter;
 };
