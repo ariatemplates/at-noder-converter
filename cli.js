@@ -24,6 +24,10 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
     "format" : {
         boolean : true,
         description : "Re-format the whole file instead of modifying parts of it. This can lose some comments."
+    },
+    "keep-requires-top" : {
+        boolean : true,
+        description : "Keep all requires at the top of the file, even if there is only one usage of a dependency."
     }
 });
 var argv = optimist.argv;
@@ -34,7 +38,10 @@ var convertFiles = function () {
     var errors = 0;
     argv._.forEach(function (file) {
         try {
-            converter(file, argv.format);
+            converter(file, {
+                keepRequiresTop : argv['keep-requires-top'],
+                format : argv.format
+            });
             successes++;
             console.log(file + ": OK");
         } catch (e) {

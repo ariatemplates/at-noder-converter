@@ -25,6 +25,9 @@ module.exports = function (atpackager) {
         this.files = cfg.files || ['**/*.js'];
         this.ignoreErrors = cfg.ignoreErrors || ["alreadyConverted", "noAria"];
         this.stringBased = "stringBased" in cfg ? cfg.stringBased : true;
+        this.options = {
+            keepRequiresTop : cfg.keepRequiresTop
+        };
     };
 
     ATNoderConverter.prototype._convertFile = function (packaging, inputFile) {
@@ -40,7 +43,7 @@ module.exports = function (atpackager) {
         var ast = uglifyContentProvider.getAST(inputFile, textContent);
         if (ast) {
             try {
-                textContent = process(ast, textContent);
+                textContent = process(ast, textContent, this.options);
                 grunt.verbose.writeln("[ATNoderConverter] Converted " + inputFile.logicalPath.yellow + " successfully.");
                 inputFile.clearContent(); // content has changed, clear everything
                 uglifyContentProvider.setAST(inputFile, ast);

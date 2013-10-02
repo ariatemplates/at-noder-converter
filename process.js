@@ -61,12 +61,13 @@ module.exports = function (UglifyJS) {
         return true;
     };
 
-    var Transformation = function (ast, sourceText) {
+    var Transformation = function (ast, sourceText, options) {
         this.ast = ast;
         if (sourceText) {
             sourceText = sourceText.replace(/\r\n?|[\n\u2028\u2029]/g, "\n").replace(/\uFEFF/g, '');
             this.sourceText = sourceText;
         }
+        this.options = options || {};
     };
 
     Transformation.prototype.findAriaDefAndGlobals = function () {
@@ -378,12 +379,14 @@ module.exports = function (UglifyJS) {
             operator : "=",
             right : this.ariaDefinition.node
         }), this.insertModuleExportsInString);
+        var keepRequiresTop = this.options.keepRequiresTop;
         var dependencies = this.dependencies;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
             curDep.baseRelativePath = computeRelativePath(this.baseLogicalPath, curDep.baseLogicalPath);
             var requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
-            if (curDep.varName || curDep.usages.length > 1) {
+            var nbUsages = curDep.usages.length;
+            if (curDep.varName || nbUsages > 1 || nbUsages === 1 && keepRequiresTop) {
                 var varName = curDep.varName || this.createVarName(curDep);
                 this.insertNodeLater(new UglifyJS.AST_Var({
                     definitions : [new UglifyJS.AST_VarDef({
@@ -398,7 +401,7 @@ module.exports = function (UglifyJS) {
                         name : varName
                     }));
                 }, this);
-            } else if (curDep.usages.length == 1) {
+            } else if (nbUsages === 1) {
                 this.replaceNodeLater(curDep.usages[0], requireNode);
             } else {
                 this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
@@ -618,8 +621,8 @@ module.exports = function (UglifyJS) {
         this.ast.body.splice(0, 0, node);
     };
 
-    return function (ast, sourceText) {
-        var scope = new Transformation(ast, sourceText);
+    return function (ast, sourceText, options) {
+        var scope = new Transformation(ast, sourceText, options);
         scope.findAriaDefAndGlobals();
         scope.findDependencies();
         scope.insertRequires();
