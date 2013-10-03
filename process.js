@@ -409,7 +409,7 @@ module.exports = function (UglifyJS) {
                 }));
             }
         }
-        if (this.globals.hasOwnProperty(this.classpath)) {
+        if (this.globals.hasOwnProperty(this.classpath) && this.options.replaceOwnClasspath) {
             this.globals[this.classpath].forEach(function (usageNode) {
                 this.replaceNodeLater(usageNode, createModuleDotExports());
             }, this);

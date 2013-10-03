@@ -26,7 +26,8 @@ module.exports = function (atpackager) {
         this.ignoreErrors = cfg.ignoreErrors || ["alreadyConverted", "noAria"];
         this.stringBased = "stringBased" in cfg ? cfg.stringBased : true;
         this.options = {
-            keepRequiresTop : cfg.keepRequiresTop
+            keepRequiresTop : cfg.keepRequiresTop,
+            replaceOwnClasspath : cfg.replaceOwnClasspath
         };
     };
 

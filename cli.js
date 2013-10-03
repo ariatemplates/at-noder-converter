@@ -28,6 +28,10 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
     "keep-requires-top" : {
         boolean : true,
         description : "Keep all requires at the top of the file, even if there is only one usage of a dependency."
+    },
+    "replace-own-classpath" : {
+        boolean : true,
+        description : "If a class references itself by its own classpath, replaces this reference by module.exports."
     }
 });
 var argv = optimist.argv;
@@ -40,6 +44,7 @@ var convertFiles = function () {
         try {
             converter(file, {
                 keepRequiresTop : argv['keep-requires-top'],
+                replaceOwnClasspath : argv['replace-own-classpath'],
                 format : argv.format
             });
             successes++;
