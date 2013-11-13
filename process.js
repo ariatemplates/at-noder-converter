@@ -146,7 +146,7 @@ module.exports = function (UglifyJS) {
         }, this);
         if (this.parentClasspath) {
             this.parentType = this.parentType || "JS";
-            if (!extensions.hasOwnProperty(this.parentType) || this.parentType === "RES") {
+            if (!extensions.hasOwnProperty(this.parentType)) {
                 return reportError("Incorrect value in $extendsType", value);
             }
             this.addDependencyFromNodeWithReplacement(this.parentType, this.parentClasspath.parent, this.parentClasspath.node);
@@ -165,7 +165,6 @@ module.exports = function (UglifyJS) {
     var extensions = {
         JS : "",
         TPL : ".tpl",
-        RES : ".ATres",
         CSS : ".tpl.css",
         TML : ".tml",
         CML : ".cml",
@@ -180,6 +179,32 @@ module.exports = function (UglifyJS) {
             args : [new UglifyJS.AST_String({
                 value : path
             })]
+        });
+    };
+
+    var createRequireResourceNode = function (curDep, requesterBaseLogicalPath) {
+        var serverResource = /([^\/]*)\/Res$/.exec(curDep.baseLogicalPath);
+        var requireNode = createRequireNode(computeRelativePath(requesterBaseLogicalPath, "ariatemplates/$resources"));
+        var args = [new UglifyJS.AST_String({
+            value : curDep.baseRelativePath
+        })];
+        if (/^(.|..)\//.test(curDep.baseRelativePath)) {
+            // relative path, include __dirname:
+            args.unshift(new UglifyJS.AST_SymbolRef({
+                name : "__dirname"
+            }));
+        }
+        if (serverResource) {
+            args.unshift(new UglifyJS.AST_String({
+                value : serverResource[1]
+            }));
+        }
+        return new UglifyJS.AST_Call({
+            expression : new UglifyJS.AST_Dot({
+                expression : requireNode,
+                property : serverResource ? "module" : "file"
+            }),
+            args : args
         });
     };
 
@@ -306,19 +331,7 @@ module.exports = function (UglifyJS) {
             if (property.value instanceof UglifyJS.AST_String) {
                 this.addDependencyFromNodeWithReplacement("RES", property, property.value);
             } else if (property.value instanceof UglifyJS.AST_Object) {
-                var provider = property.value;
-                var properties = provider.properties;
-                var providerProperty;
-                for (var i = 0, l = properties.length; i < l; i++) {
-                    if (properties[i].key === "provider") {
-                        providerProperty = properties[i];
-                        break;
-                    }
-                }
-                if (!providerProperty) {
-                    return reportError("Expected a provider property in $resources", property);
-                }
-                this.addDependencyFromNodeWithReplacement("JS", providerProperty, providerProperty.value);
+                return reportError("This tool does not support the conversion of resource providers in $resources", property);
             } else {
                 return reportError("Expected either a string litteral or an object litteral in $resources", property);
             }
@@ -383,8 +396,13 @@ module.exports = function (UglifyJS) {
         var dependencies = this.dependencies;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
+            var requireNode;
             curDep.baseRelativePath = computeRelativePath(this.baseLogicalPath, curDep.baseLogicalPath);
-            var requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
+            if (curDep.type == "RES") {
+                requireNode = createRequireResourceNode(curDep, this.baseLogicalPath);
+            } else {
+                requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
+            }
             var nbUsages = curDep.usages.length;
             if (curDep.varName || nbUsages > 1 || nbUsages === 1 && keepRequiresTop) {
                 var varName = curDep.varName || this.createVarName(curDep);
