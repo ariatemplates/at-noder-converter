@@ -326,10 +326,10 @@ module.exports = function (UglifyJS) {
     };
     Transformation.prototype.findDependenciesIn$templates = findDepsInArray("TPL", false);
     Transformation.prototype.findDependenciesIn$css = findDepsInArray("CSS", true);
-    Transformation.prototype.findDependenciesIn$macrolibs = findDepsInArray("TML", true);
-    Transformation.prototype.findDependenciesIn$csslibs = findDepsInArray("CML", true);
+    Transformation.prototype.findDependenciesIn$macrolibs = findDepsInArray("TML", false);
+    Transformation.prototype.findDependenciesIn$csslibs = findDepsInArray("CML", false);
     Transformation.prototype.findDependenciesIn$texts = findDepsInMap("TXT");
-    Transformation.prototype.findDependenciesIn$namespaces = findDepsInMap("JS", true);
+    Transformation.prototype.findDependenciesIn$namespaces = findDepsInMap("JS");
 
     Transformation.prototype.createVarName = function (dependency) {
         return dependency.globalName.replace(/[^a-zA-Z0-9]+/g, "_").split("_").map(function (part, index) {
