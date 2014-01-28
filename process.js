@@ -476,9 +476,17 @@ module.exports = function (UglifyJS) {
         return false;
     };
 
+    var methodsOrder = {
+        "insertNode" : -1,
+        "replaceNode" : 1
+    };
+
     var sortOperations = function (op1, op2) {
         if (op1.position != op2.position) {
             return op1.position - op2.position;
+        } else if (op1.method != op2.method) {
+            // for the same position, insertNode is before replaceNode
+            return methodsOrder[op1.method] - methodsOrder[op2.method];
         } else {
             return op1.order - op2.order;
         }
