@@ -3,14 +3,17 @@
   "name": "at-noder-converter",
   "description": "Tool to convert JavaScript files from the current Aria Templates class syntax to the new one introduced with the migration to noder-js.",
   "version": "1.0.0",
-  "homepage": "http://ariatemplates.com",
+  "keywords": [
+    "ariatemplates",
+    "noder-js"
+  ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/divdavem/at-noder-converter.git"
+    "url": "git://github.com/ariatemplates/at-noder-converter.git"
   },
-  "bin" : "./cli.js",
+  "bin": "./cli.js",
   "dependencies": {
-    "uglify-js": "~2.3.6",
-    "optimist": "~0.6.0"
+    "uglify-js": "~2.4.13",
+    "optimist": "~0.3.7"
   }
 }
