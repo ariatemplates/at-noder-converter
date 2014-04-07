@@ -392,7 +392,7 @@ module.exports = function (UglifyJS) {
             operator : "=",
             right : this.ariaDefinition.node
         }), this.insertModuleExportsInString);
-        var keepRequiresTop = this.options.keepRequiresTop;
+        var simplifySingleUsage = this.options.simplifySingleUsage;
         var dependencies = this.dependencies;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
@@ -404,7 +404,9 @@ module.exports = function (UglifyJS) {
                 requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
             }
             var nbUsages = curDep.usages.length;
-            if (curDep.varName || nbUsages > 1 || nbUsages === 1 && keepRequiresTop) {
+            if (simplifySingleUsage && nbUsages === 1 && !curDep.varName) {
+                this.replaceNodeLater(curDep.usages[0], requireNode);
+            } else if (curDep.varName || nbUsages > 0) {
                 var varName = curDep.varName || this.createVarName(curDep);
                 this.insertNodeLater(new UglifyJS.AST_Var({
                     definitions : [new UglifyJS.AST_VarDef({
@@ -419,8 +421,6 @@ module.exports = function (UglifyJS) {
                         name : varName
                     }));
                 }, this);
-            } else if (nbUsages === 1) {
-                this.replaceNodeLater(curDep.usages[0], requireNode);
             } else {
                 this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
                     body : requireNode

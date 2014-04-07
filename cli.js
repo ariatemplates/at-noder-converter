@@ -25,9 +25,9 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
         boolean : true,
         description : "Re-format the whole file instead of modifying parts of it. This can lose some comments."
     },
-    "keep-requires-top" : {
+    "simplify-single-usage" : {
         boolean : true,
-        description : "Keep all requires at the top of the file, even if there is only one usage of a dependency."
+        description : "If there is only one usage of a dependency, puts the call to require where the dependency is used instead of creating a variable."
     },
     "replace-own-classpath" : {
         boolean : true,
@@ -43,7 +43,7 @@ var convertFiles = function () {
     argv._.forEach(function (file) {
         try {
             converter(file, {
-                keepRequiresTop : argv['keep-requires-top'],
+                simplifySingleUsage : argv['simplify-single-usage'],
                 replaceOwnClasspath : argv['replace-own-classpath'],
                 format : argv.format
             });
