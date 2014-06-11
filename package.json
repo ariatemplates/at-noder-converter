@@ -2,7 +2,7 @@
   "author": "ariatemplates <contact@ariatemplates.com> (http://github.com/ariatemplates)",
   "name": "at-noder-converter",
   "description": "Tool to convert JavaScript files from the current Aria Templates class syntax to the new one introduced with the migration to noder-js.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "keywords": [
     "ariatemplates",
     "noder-js"
