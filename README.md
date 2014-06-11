@@ -143,21 +143,6 @@ the `$classpath` and the `$dependencies` properties contain expressions and not 
 	});
 	```
 
-* *at-noder-converter* does not convert dependencies on resource providers. This has to be done manually.
-For example, the following file cannot be converted by *at-noder-converter*:
-
-	```js
-	Aria.classDefinition({
-	   $classpath: "a.b.MyClass",
-	   $resources: {
-	      "myRes": {
-	         provider: "x.y.MyResourceProvider"
-	      }
-	   },
-	   $prototype: {}
-	});
-	```
-
 ## Command line tool
 
 This section explains how to use *at-noder-converter* as a command line tool.

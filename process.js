@@ -134,7 +134,7 @@ module.exports = function (UglifyJS) {
 
         var ariaDefParameter = this.ariaDefinition.node.args[0];
         if (!(ariaDefParameter instanceof UglifyJS.AST_Object)) {
-            return reportError("Expected an object litteral for the Aria definition", ariaDefParameter);
+            return reportError("Expected an object literal for the Aria definition", ariaDefParameter);
         }
         this.addDependency("Aria", "JS", "ariatemplates/Aria", "Aria"); // a very special dependency
         ariaDefParameter.properties.forEach(function (property) {
@@ -208,6 +208,49 @@ module.exports = function (UglifyJS) {
         });
     };
 
+    var createRequireResourceProviderNode = function (curDep, requesterBaseLogicalPath, requesterClasspath) {
+        var requireNode = createRequireNode(computeRelativePath(requesterBaseLogicalPath, "ariatemplates/$resourcesProviders"));
+        var args = [new UglifyJS.AST_String({
+            value : curDep.baseRelativePath
+        })];
+        if (/^(.|..)\//.test(curDep.baseRelativePath)) {
+            // relative path, include __dirname:
+            args.unshift(new UglifyJS.AST_SymbolRef({
+                name : "__dirname"
+            }));
+        } else {
+            args.unshift(new UglifyJS.AST_String({
+                value : ""
+            }));
+        }
+
+        args.push(new UglifyJS.AST_String({
+               value : requesterClasspath
+        }));
+
+        var params = curDep.params;
+
+        args.push(new UglifyJS.AST_String({
+               value : params.onLoad
+        }));
+        args.push(new UglifyJS.AST_String({
+               value : params.handler
+        }));
+        params.resources.forEach(function (curRes){
+            args.push(new UglifyJS.AST_String({
+                   value : curRes
+            }));
+        });
+
+        return new UglifyJS.AST_Call({
+            expression : new UglifyJS.AST_Dot({
+                expression : requireNode,
+                property : "fetch"
+            }),
+            args : args
+        });
+    };
+
     Transformation.prototype.addDependency = function (globalName, type, baseLogicalPath, varName) {
         var res = this.dependencies[globalName];
         if (!res) {
@@ -229,7 +272,7 @@ module.exports = function (UglifyJS) {
 
     Transformation.prototype.addDependencyFromNode = function (type, parent, node) {
         if (!(node instanceof UglifyJS.AST_String)) {
-            return reportError("Expected a string litteral", node);
+            return reportError("Expected a string literal", node);
         }
         return this.addDependency(node.value, type);
     };
@@ -246,7 +289,7 @@ module.exports = function (UglifyJS) {
         return function (node, parent) {
             var value = node.value;
             if (!(value instanceof UglifyJS.AST_Array)) {
-                return reportError("Expected an array litteral in " + node.key, node.value);
+                return reportError("Expected an array literal in " + node.key, node.value);
             }
             var fnToCall = doReplacements ? this.addDependencyFromNodeWithReplacement : this.addDependencyFromNode;
             value.elements.forEach(fnToCall.bind(this, type, value));
@@ -264,7 +307,7 @@ module.exports = function (UglifyJS) {
         return function (node) {
             var value = node.value;
             if (!(value instanceof UglifyJS.AST_Object)) {
-                return reportError("Expected an object litteral in " + node.key, node.value);
+                return reportError("Expected an object literal in " + node.key, node.value);
             }
             value.properties.forEach(function (property) {
                 this.addDependencyFromNodeWithReplacement(type, property, property.value);
@@ -278,7 +321,7 @@ module.exports = function (UglifyJS) {
         }
         var value = property.value
         if (!(value instanceof UglifyJS.AST_String)) {
-            return reportError("Expected an string litteral in $classpath", value);
+            return reportError("Expected an string literal in $classpath", value);
         }
         this.classpath = value.value;
         this.baseLogicalPath = getBaseLogicalPath(this.classpath);
@@ -290,7 +333,7 @@ module.exports = function (UglifyJS) {
         }
         var value = property.value
         if (!(value instanceof UglifyJS.AST_String)) {
-            return reportError("Expected an string litteral in $package", value);
+            return reportError("Expected an string literal in $package", value);
         }
         this.classpath = value.value;
         this.baseLogicalPath = getBaseLogicalPath(this.classpath);
@@ -325,18 +368,98 @@ module.exports = function (UglifyJS) {
         }
         var value = node.value;
         if (!(value instanceof UglifyJS.AST_Object)) {
-            return reportError("Expected an object litteral in $resources", node.value);
+            return reportError("Expected an object literal in $resources", node.value);
         }
         value.properties.forEach(function (property) {
+            //console.log("props", property.value.properties[2].value);
+            var astObject;
             if (property.value instanceof UglifyJS.AST_String) {
                 this.addDependencyFromNodeWithReplacement("RES", property, property.value);
-            } else if (property.value instanceof UglifyJS.AST_Object) {
-                return reportError("This tool does not support the conversion of resource providers in $resources", property);
+            } else if (property.value instanceof UglifyJS.AST_Object && (astObject = getMapFromASTObject(property.value)).provider) {
+                this.addResourceProviderDependency(astObject, property);
             } else {
-                return reportError("Expected either a string litteral or an object litteral in $resources", property);
+                return reportError("Expected either a string literal or an object literal containing a \"provider\" property in $resources", property);
             }
         }, this);
     };
+
+    var providersCounters = 0;
+
+    Transformation.prototype.addResourceProviderDependency = function (providerCfg, property) {
+        var provider = providerCfg.provider;
+        if (!(provider instanceof UglifyJS.AST_String)) {
+            return reportError("Expected a string literal as resources provider", provider);
+        }
+        var providerValue = provider.value;
+
+        var providerBaseLogicalPath = getBaseLogicalPath(providerValue);
+        var globalName = providerValue + providersCounters;
+        providersCounters++;
+
+        var onLoad = providerCfg.onLoad;
+        var onLoadValue = "";
+        if (onLoad) {
+            if (onLoad instanceof UglifyJS.AST_String) {
+                onLoadValue = onLoad.value;
+            } else {
+                return reportError("Expected a string literal as resources provider's onLoad", onLoad);
+            }
+        }
+
+        var handler = providerCfg.handler;
+        var handlerValue = "";
+        if (handler) {
+            if (handler instanceof UglifyJS.AST_String) {
+                handlerValue = handler.value;
+            } else {
+                return reportError("Expected a string literal as resources provider's handler", handler);
+            }
+        }
+
+        var resources = providerCfg.resources;
+        var resourcesValue = [];
+        if (resources) {
+            if (resources instanceof UglifyJS.AST_Array) {
+                var elements = resources.elements;
+                for (var i = 0, len = elements.length; i < len; i++) {
+                    if (elements[i] instanceof UglifyJS.AST_String) {
+                        resourcesValue.push(elements[i].value);
+                    } else {
+                        return reportError("Expected a string literal as resources provider's resource", elements[i]);
+                    }
+                }
+            } else {
+                return reportError("Expected array as resources provider's resources", resources);
+            }
+        }
+
+
+        this.dependencies[globalName] = {
+            globalName : globalName,
+            type : "RES_PROVIDER",
+            baseLogicalPath : providerBaseLogicalPath,
+            usages : [{
+                parent : property,
+                node : property.value
+            }],
+            params : {
+                onLoad : onLoadValue,
+                handler : handlerValue,
+                resources : resourcesValue
+            }
+        };
+
+
+    };
+
+    var getMapFromASTObject = function (astObject) {
+        var map = {};
+        astObject.properties.forEach(function (property) {
+        	map[property.key] = property.value;
+        });
+        return map;
+    };
+
     Transformation.prototype.findDependenciesIn$templates = findDepsInArray("TPL", false);
     Transformation.prototype.findDependenciesIn$css = findDepsInArray("CSS", true);
     Transformation.prototype.findDependenciesIn$macrolibs = findDepsInArray("TML", false);
@@ -400,6 +523,8 @@ module.exports = function (UglifyJS) {
             curDep.baseRelativePath = computeRelativePath(this.baseLogicalPath, curDep.baseLogicalPath);
             if (curDep.type == "RES") {
                 requireNode = createRequireResourceNode(curDep, this.baseLogicalPath);
+            } else if (curDep.type == "RES_PROVIDER") {
+                requireNode = createRequireResourceProviderNode(curDep, this.baseLogicalPath, this.classpath);
             } else {
                 requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
             }
