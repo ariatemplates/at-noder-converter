@@ -182,9 +182,10 @@ module.exports = function (UglifyJS) {
         });
     };
 
-    var createRequireResourceNode = function (curDep, requesterBaseLogicalPath) {
+    var createRequireResourceNode = function (curDep, requesterBaseLogicalPath, forceAbsolutePaths) {
         var serverResource = /([^\/]*)\/Res$/.exec(curDep.baseLogicalPath);
-        var requireNode = createRequireNode(computeRelativePath(requesterBaseLogicalPath, "ariatemplates/$resources"));
+        var path = computeRelativePath(requesterBaseLogicalPath, "ariatemplates/$resources", forceAbsolutePaths);
+        var requireNode = createRequireNode(path);
         var args = [new UglifyJS.AST_String({
             value : curDep.baseRelativePath
         })];
@@ -208,8 +209,9 @@ module.exports = function (UglifyJS) {
         });
     };
 
-    var createRequireResourceProviderNode = function (curDep, requesterBaseLogicalPath, requesterClasspath) {
-        var requireNode = createRequireNode(computeRelativePath(requesterBaseLogicalPath, "ariatemplates/$resourcesProviders"));
+    var createRequireResourceProviderNode = function (curDep, requesterBaseLogicalPath, requesterClasspath, forceAbsolutePaths) {
+        var path = computeRelativePath(requesterBaseLogicalPath, "ariatemplates/$resourcesProviders", forceAbsolutePaths);
+        var requireNode = createRequireNode(path);
         var args = [new UglifyJS.AST_String({
             value : curDep.baseRelativePath
         })];
@@ -486,7 +488,10 @@ module.exports = function (UglifyJS) {
         });
     };
 
-    var computeRelativePath = function (refPath, logicalPath) {
+    var computeRelativePath = function (refPath, logicalPath, forceAbsolute) {
+        if (forceAbsolute) {
+            return logicalPath;
+        }
         var refParts = refPath.split("/");
         var targetParts = logicalPath.split("/");
         var maxCommon = Math.min(refParts.length, targetParts.length) - 1;
@@ -517,14 +522,15 @@ module.exports = function (UglifyJS) {
         }), this.insertModuleExportsInString);
         var simplifySingleUsage = this.options.simplifySingleUsage;
         var dependencies = this.dependencies;
+        var forceAbsolutePaths = this.options.forceAbsolutePaths;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
             var requireNode;
-            curDep.baseRelativePath = computeRelativePath(this.baseLogicalPath, curDep.baseLogicalPath);
+            curDep.baseRelativePath = computeRelativePath(this.baseLogicalPath, curDep.baseLogicalPath, forceAbsolutePaths);
             if (curDep.type == "RES") {
-                requireNode = createRequireResourceNode(curDep, this.baseLogicalPath);
+                requireNode = createRequireResourceNode(curDep, this.baseLogicalPath, forceAbsolutePaths);
             } else if (curDep.type == "RES_PROVIDER") {
-                requireNode = createRequireResourceProviderNode(curDep, this.baseLogicalPath, this.classpath);
+                requireNode = createRequireResourceProviderNode(curDep, this.baseLogicalPath, this.classpath, forceAbsolutePaths);
             } else {
                 requireNode = createRequireNode(curDep.baseRelativePath + extensions[curDep.type]);
             }

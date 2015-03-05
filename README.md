@@ -181,11 +181,12 @@ at-noder-converter MyClass1.js MyClass2.js MyClass3.js
 
 The following options can be used to change the behavior:
 
-| Option                    | Description                                                                                                                       |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `--format`                | Re-format the whole file instead of modifying parts of it. This can lose some comments.                                           |
-| `--simplify-single-usage` | If there is only one usage of a dependency, puts the call to require where the dependency is used instead of creating a variable. |
-| `--replace-own-classpath` | If a class references itself by its own classpath, replaces this reference by module.exports.                                     |
+| Option                    | Description                                                                                                                         |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `--format`                | Re-format the whole file instead of modifying parts of it. This can lose some comments.                                             |
+| `--force-absolute-paths`  | Always use absolute paths in calls to `require()` even if the requiring and required file share some part of the classpath.         |
+| `--simplify-single-usage` | If there is only one usage of a dependency, puts the call to `require` where the dependency is used instead of creating a variable. |
+| `--replace-own-classpath` | If a class references itself by its own classpath, replaces this reference by `module.exports`.                                     |
 
 You can also use `--help` option to get the list of available options, and the `--version` option to display the version of
 *at-noder-converter*.
@@ -248,6 +249,7 @@ Here is an example, showing all the accepted configuration parameters, along wit
                      files: ['**/*.js'],
                      ignoreErrors: ["alreadyConverted", "noAria"],
                      stringBased: true,
+                     forceAbsolutePaths: false,
                      simplifySingleUsage: false,
                      replaceOwnClasspath: false
                   }
@@ -271,6 +273,9 @@ previous visitors), the conversion happens both in the abstract syntax tree repr
 file and in the string version, allowing to keep file formatting and most comments.
 If this parameter is false, changes are only done in the abstract syntax tree, and no effort is made to
 keep formatting and comments.
+
+* **forceAbsolutePaths**: if this parameter is true, all the calls to `require()` will use absolute paths,
+even if the requiring and required file share some part of the classpath.
 
 * **simplifySingleUsage**: if this parameter is true, if there is only one usage of a dependency,
 *at-noder-converter* puts the call to require where the dependency is used instead of creating a variable.

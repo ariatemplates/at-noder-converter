@@ -25,13 +25,17 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
         boolean : true,
         description : "Re-format the whole file instead of modifying parts of it. This can lose some comments."
     },
+    "force-absolute-paths" : {
+        boolean : true,
+        description : "Always use absolute paths in calls to `require()` even if the requiring and required file share some part of the classpath."
+    },
     "simplify-single-usage" : {
         boolean : true,
-        description : "If there is only one usage of a dependency, puts the call to require where the dependency is used instead of creating a variable."
+        description : "If there is only one usage of a dependency, puts the call to `require` where the dependency is used instead of creating a variable."
     },
     "replace-own-classpath" : {
         boolean : true,
-        description : "If a class references itself by its own classpath, replaces this reference by module.exports."
+        description : "If a class references itself by its own classpath, replaces this reference by `module.exports`."
     }
 });
 var argv = optimist.argv;
@@ -43,6 +47,7 @@ var convertFiles = function () {
     argv._.forEach(function (file) {
         try {
             converter(file, {
+                forceAbsolutePaths : argv['force-absolute-paths'],
                 simplifySingleUsage : argv['simplify-single-usage'],
                 replaceOwnClasspath : argv['replace-own-classpath'],
                 format : argv.format
