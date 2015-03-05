@@ -18,6 +18,7 @@ module.exports = function (atpackager) {
     var grunt = atpackager.grunt;
     var uglifyContentProvider = atpackager.contentProviders.uglifyJS;
     var textContentProvider = atpackager.contentProviders.textContent;
+    var atCompiledTemplate = atpackager.contentProviders.ATCompiledTemplate;
     var alreadyDoneKey = "atnoderconverter:processed:" + (new Date()).getTime();
 
     var ATNoderConverter = function (cfg) {
@@ -41,7 +42,17 @@ module.exports = function (atpackager) {
         }
         inputFile[alreadyDoneKey] = true;
         var stringBased = this.stringBased && (inputFile.contentProvider !== uglifyContentProvider);
-        var textContent = stringBased ? inputFile.getTextContent() : null;
+        var textContent;
+        if (atCompiledTemplate.getClassGeneratorFromLogicalPath(inputFile.logicalPath)) {
+            // makes sure templates are already compiled or compile them if necessary
+            textContent = atCompiledTemplate.getCompiledTemplate(inputFile);
+            if (textContent == null) {
+                grunt.log.error('ATNoderConverter: could not compile ' + inputFile.logicalPath.yellow);
+                return;
+            }
+        } else {
+            textContent = stringBased ? inputFile.getTextContent() : null;
+        }
         var ast = uglifyContentProvider.getAST(inputFile, textContent);
         if (ast) {
             try {
