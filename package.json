@@ -12,8 +12,15 @@
     "url": "git://github.com/ariatemplates/at-noder-converter.git"
   },
   "bin": "./cli.js",
+  "scripts": {
+    "test": "mocha --recursive test"
+  },
   "dependencies": {
     "uglify-js": "~2.4.13",
     "optimist": "~0.3.7"
+  },
+  "devDependencies": {
+    "chai": "~2.1.1",
+    "mocha": "~2.2.1"
   }
 }

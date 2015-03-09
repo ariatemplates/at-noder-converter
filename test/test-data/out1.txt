@@ -1,0 +1,22 @@
+
+var Aria = require("ariatemplates/Aria");
+require("./UnusedDep");
+var modulesFooBarImportantDep = require("./ImportantDep");
+var modulesFooBarParentScript = require("./ParentScript");
+module.exports = Aria.tplScriptDefinition({
+  $classpath: 'modules.foo.bar.TestScript',
+  $extends: modulesFooBarParentScript,
+  $constructor: function() {},
+  $prototype: {
+
+    $dataReady: function() {
+        // comment
+        this.foo = "foo";
+        this.bar = "bar";
+    },
+
+    something: function(param) {
+        modulesFooBarImportantDep.something(param, "anotherParam");
+    }
+  }
+});
