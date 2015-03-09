@@ -457,7 +457,7 @@ module.exports = function (UglifyJS) {
     var getMapFromASTObject = function (astObject) {
         var map = {};
         astObject.properties.forEach(function (property) {
-        	map[property.key] = property.value;
+            map[property.key] = property.value;
         });
         return map;
     };
