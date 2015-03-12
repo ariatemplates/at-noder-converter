@@ -696,7 +696,7 @@ module.exports = function (UglifyJS) {
         var node = nodeAndParent.node;
         var pos = node.start.pos;
         var sourceText = this.sourceText;
-        this.sourceText = sourceText.substr(0, pos) + "module.exports = " + sourceText.substr(pos);
+        this.sourceText = sourceText.substr(0, pos) + "\nmodule.exports = " + sourceText.substr(pos);
     };
 
     Transformation.prototype.replaceNode = function (nodeAndParent, newNode, stringOperation) {
@@ -778,11 +778,17 @@ module.exports = function (UglifyJS) {
         this.ast.body.splice(0, 0, node);
     };
 
+    Transformation.prototype.handleNewlines = function () {
+        // strip leading newlines
+        this.sourceText = this.sourceText.replace(/^\n+/, "");
+    };
+
     return function (ast, sourceText, options) {
         var scope = new Transformation(ast, sourceText, options);
         scope.findAriaDefAndGlobals();
         scope.findDependencies();
         scope.insertRequires();
+        scope.handleNewlines();
         return scope.sourceText;
     };
 };

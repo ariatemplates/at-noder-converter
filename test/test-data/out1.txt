@@ -1,8 +1,8 @@
-
 var Aria = require("ariatemplates/Aria");
 require("./UnusedDep");
 var modulesFooBarImportantDep = require("./ImportantDep");
 var modulesFooBarParentScript = require("./ParentScript");
+
 module.exports = Aria.tplScriptDefinition({
   $classpath: 'modules.foo.bar.TestScript',
   $extends: modulesFooBarParentScript,
