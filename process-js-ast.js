@@ -523,6 +523,7 @@ module.exports = function (UglifyJS) {
         var simplifySingleUsage = this.options.simplifySingleUsage;
         var dependencies = this.dependencies;
         var forceAbsolutePaths = this.options.forceAbsolutePaths;
+        var removeUnusedImports = this.options.removeUnusedImports;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
             var requireNode;
@@ -553,9 +554,13 @@ module.exports = function (UglifyJS) {
                     }));
                 }, this);
             } else {
-                this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
-                    body : requireNode
-                }));
+                if (removeUnusedImports) {
+                    console.warn("Removing unused dependency '" + requireNode.args[0].value + "' in '" + this.classpath + "'");
+                } else {
+                    this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
+                        body : requireNode
+                    }));
+                }
             }
         }
         if (this.globals.hasOwnProperty(this.classpath) && this.options.replaceOwnClasspath) {

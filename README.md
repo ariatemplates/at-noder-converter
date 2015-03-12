@@ -186,7 +186,11 @@ The following options can be used to change the behavior:
 | `--format`                | Re-format the whole file instead of modifying parts of it. This can lose some comments.                                             |
 | `--force-absolute-paths`  | Always use absolute paths in calls to `require()` even if the requiring and required file share some part of the classpath.         |
 | `--simplify-single-usage` | If there is only one usage of a dependency, puts the call to `require` where the dependency is used instead of creating a variable. |
+| `--remove-unused-imports` | Does not insert statements like `require('someDependency')` when `someDependency` is not used in the current class.                 |
 | `--replace-own-classpath` | If a class references itself by its own classpath, replaces this reference by `module.exports`.                                     |
+
+`--remove-unused-imports` might potentially cause troubles if for instance a subclass of a given class used the removed dependency without explicitly declaring it
+(which is a bad practice, but might have happened in the codebase by accident). Hence all the removed imports are logged to the standard error stream (`stderr`).
 
 You can also use `--help` option to get the list of available options, and the `--version` option to display the version of
 *at-noder-converter*.
@@ -251,6 +255,7 @@ Here is an example, showing all the accepted configuration parameters, along wit
                      stringBased: true,
                      forceAbsolutePaths: false,
                      simplifySingleUsage: false,
+                     removeUnusedImports: false,
                      replaceOwnClasspath: false
                   }
                }]
@@ -279,6 +284,9 @@ even if the requiring and required file share some part of the classpath.
 
 * **simplifySingleUsage**: if this parameter is true, if there is only one usage of a dependency,
 *at-noder-converter* puts the call to require where the dependency is used instead of creating a variable.
+
+* **removeUnusedImports**: if this parameter is true, when a declared dependency is not used in the current class,
+*at-noder-converter* does not insert statements like `require('someDependency')` (which are not assigned to any variable)
 
 * **replaceOwnClasspath**: if this parameter is true, if a class references itself by its own classpath,
 *at-noder-converter* replaces this reference by `module.exports`.

@@ -1,10 +1,10 @@
 var Aria = require("ariatemplates/Aria");
-require("./UnusedDep");
+var zzzSomeDep = require("zzz/someDep");
 var modulesFooBarImportantDep = require("./ImportantDep");
 var modulesFooBarParentScript = require("./ParentScript");
 
 module.exports = Aria.tplScriptDefinition({
-  $classpath: 'modules.foo.bar.TestScript',
+  $classpath: 'modules.foo.bar.TestDefaultOptions',
   $extends: modulesFooBarParentScript,
   $constructor: function() {},
   $prototype: {
@@ -13,6 +13,7 @@ module.exports = Aria.tplScriptDefinition({
         // comment
         this.foo = "foo";
         this.bar = "bar";
+        zzzSomeDep.something.method();
     },
 
     something: function(param) {

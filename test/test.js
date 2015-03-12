@@ -20,6 +20,7 @@ function validateFile(inputFileName, outputFileName, options) {
         forceAbsolutePaths  : !!(options.forceAbsolutePaths),
         simplifySingleUsage : !!(options.simplifySingleUsage),
         replaceOwnClasspath : !!(options.replaceOwnClasspath),
+        removeUnusedImports : !!(options.removeUnusedImports),
         format              : !!(options.format)
     };
 
@@ -31,7 +32,13 @@ function validateFile(inputFileName, outputFileName, options) {
 }
 
 describe('AT-Noder-Converter tests', function () {
-    it('works with default opts', function () {
-        validateFile('in1.txt', 'out1.txt');
+    it('works with default options', function () {
+        validateFile('default.in.txt', 'default.out.txt');
+    });
+
+    it('works with "remove unused imports" option', function () {
+        validateFile('removeUnused.in.txt', 'removeUnused.out.txt', {
+            removeUnusedImports : true
+        });
     });
 });

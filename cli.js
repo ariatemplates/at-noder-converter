@@ -33,6 +33,10 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
         boolean : true,
         description : "If there is only one usage of a dependency, puts the call to `require` where the dependency is used instead of creating a variable."
     },
+    "remove-unused-imports" : {
+        boolean : true,
+        description : "Does not insert statements like `require('someDependency')` when `someDependency` is not used in the current class."
+    },
     "replace-own-classpath" : {
         boolean : true,
         description : "If a class references itself by its own classpath, replaces this reference by `module.exports`."
@@ -49,6 +53,7 @@ var convertFiles = function () {
             converter(file, {
                 forceAbsolutePaths : argv['force-absolute-paths'],
                 simplifySingleUsage : argv['simplify-single-usage'],
+                removeUnusedImports : argv['remove-unused-imports'],
                 replaceOwnClasspath : argv['replace-own-classpath'],
                 format : argv.format
             });
