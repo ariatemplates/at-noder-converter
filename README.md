@@ -188,6 +188,7 @@ The following options can be used to change the behavior:
 | `--simplify-single-usage` | If there is only one usage of a dependency, puts the call to `require` where the dependency is used instead of creating a variable. |
 | `--remove-unused-imports` | Does not insert statements like `require('someDependency')` when `someDependency` is not used in the current class.                 |
 | `--replace-own-classpath` | If a class references itself by its own classpath, replaces this reference by `module.exports`.                                     |
+| `--use-short-var-names`   | When requiring `module.foo.Bar`, try assigning it to `Bar` variable instead of `moduleFooBar` whenever possible.                    |
 
 `--remove-unused-imports` might potentially cause troubles if for instance a subclass of a given class used the removed dependency without explicitly declaring it
 (which is a bad practice, but might have happened in the codebase by accident). Hence all the removed imports are logged to the standard error stream (`stderr`).
@@ -256,7 +257,8 @@ Here is an example, showing all the accepted configuration parameters, along wit
                      forceAbsolutePaths: false,
                      simplifySingleUsage: false,
                      removeUnusedImports: false,
-                     replaceOwnClasspath: false
+                     replaceOwnClasspath: false,
+                     useShortVarNames: false
                   }
                }]
 ```
@@ -290,6 +292,11 @@ even if the requiring and required file share some part of the classpath.
 
 * **replaceOwnClasspath**: if this parameter is true, if a class references itself by its own classpath,
 *at-noder-converter* replaces this reference by `module.exports`.
+
+* **useShortVarNames**: if this parameter is true, when requiring `module.foo.Bar`, *at-noder-converter*
+will try assigning it to `Bar` variable instead of `moduleFooBar`, whenever possible (if it won't create conflicts
+with existing variables)
+
 
 ## License
 

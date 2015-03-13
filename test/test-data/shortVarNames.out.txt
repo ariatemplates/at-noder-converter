@@ -1,0 +1,24 @@
+var Aria = require("ariatemplates/Aria");
+var SomeDep = require("zzz/someDep");
+require("./UnusedDep");
+var ImportantDep = require("./ImportantDep");
+var ParentScript = require("./ParentScript");
+
+module.exports = Aria.tplScriptDefinition({
+  $classpath: 'modules.foo.bar.TestShortVarNames',
+  $extends: ParentScript,
+  $constructor: function() {},
+  $prototype: {
+
+    $dataReady: function() {
+        // comment
+        this.foo = "foo";
+        this.bar = "bar";
+        SomeDep.something.method();
+    },
+
+    something: function(param) {
+        ImportantDep.something(param, "anotherParam");
+    }
+  }
+});

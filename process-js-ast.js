@@ -77,7 +77,13 @@ module.exports = function (UglifyJS) {
         var ariaDefinitionType = null;
         var globals = {};
 
+        // all var names used in methods etc.
+        var varNamesUsedInModule = [];
+
         walker = new UglifyJS.TreeWalker(function (node) {
+            if (node instanceof UglifyJS.AST_VarDef) {
+                varNamesUsedInModule.push(node.name.name);
+            }
             var ariaDefType = checkAriaDefinition(node);
             if (ariaDefType) {
                 if (ariaDefinition) {
@@ -116,6 +122,7 @@ module.exports = function (UglifyJS) {
         }
         this.ariaDefinition = ariaDefinition;
         this.ariaDefinitionType = ariaDefinitionType;
+        this.varNamesUsedInModule = varNamesUsedInModule;
         this.globals = globals;
     };
 
@@ -470,13 +477,25 @@ module.exports = function (UglifyJS) {
     Transformation.prototype.findDependenciesIn$namespaces = findDepsInMap("JS");
 
     Transformation.prototype.createVarName = function (dependency) {
-        return dependency.globalName.replace(/[^a-zA-Z0-9]+/g, "_").split("_").map(function (part, index) {
+        var parts = dependency.globalName.replace(/[^a-zA-Z0-9]+/g, "_").split("_").map(function (part, index) {
             if (index == 0) {
                 return part.charAt(0).toLowerCase() + part.substring(1);
             } else {
                 return part.charAt(0).toUpperCase() + part.substring(1);
             }
-        }).join("");
+        });
+        var lastPart = parts[parts.length - 1];
+        if (this.options.useShortVarNames && this.canVarNameBeUsed(lastPart)) {
+            return lastPart;
+        } else {
+            return parts.join("");
+        }
+    };
+
+    Transformation.prototype.canVarNameBeUsed = function (varName) {
+        // only allow variable names that are not used anywhere inside the module,
+        // to avoid name clashes and shadowing of module variables
+        return this.varNamesUsedInModule.indexOf(varName) == -1;
     };
 
     var createModuleDotExports = function () {

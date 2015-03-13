@@ -40,6 +40,10 @@ var optimist = require("optimist").usage("Convert JavaScript files from the curr
     "replace-own-classpath" : {
         boolean : true,
         description : "If a class references itself by its own classpath, replaces this reference by `module.exports`."
+    },
+    "use-short-var-names" : {
+        boolean : true,
+        description : "When requiring `module.foo.Bar`, try assigning it to `Bar` variable instead of `moduleFooBar` whenever possible."
     }
 });
 var argv = optimist.argv;
@@ -55,6 +59,7 @@ var convertFiles = function () {
                 simplifySingleUsage : argv['simplify-single-usage'],
                 removeUnusedImports : argv['remove-unused-imports'],
                 replaceOwnClasspath : argv['replace-own-classpath'],
+                useShortVarNames : argv['use-short-var-names'],
                 format : argv.format
             });
             successes++;

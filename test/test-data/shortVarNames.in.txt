@@ -1,5 +1,5 @@
 Aria.tplScriptDefinition({
-  $classpath: 'modules.foo.bar.TestRemoveUnused',
+  $classpath: 'modules.foo.bar.TestShortVarNames',
   $extends: "modules.foo.bar.ParentScript",
   $dependencies: ['zzz.someDep', 'modules.foo.bar.UnusedDep', 'modules.foo.bar.ImportantDep'],
   $constructor: function() {},

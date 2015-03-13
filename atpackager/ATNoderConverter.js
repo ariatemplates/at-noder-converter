@@ -30,7 +30,8 @@ module.exports = function (atpackager) {
             forceAbsolutePaths : cfg.forceAbsolutePaths,
             simplifySingleUsage : cfg.simplifySingleUsage,
             removeUnusedImports : cfg.removeUnusedImports,
-            replaceOwnClasspath : cfg.replaceOwnClasspath
+            replaceOwnClasspath : cfg.replaceOwnClasspath,
+            useShortVarNames : cfg.useShortVarNames
         };
     };
 

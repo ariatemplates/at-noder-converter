@@ -1,0 +1,25 @@
+Aria.tplScriptDefinition({
+  $classpath: 'modules.foo.bar.TestShortVarNamesWithConflicts',
+  $extends: "modules.foo.bar.ParentScript",
+  $dependencies: ['zzz.someDep', 'modules.foo.bar.UnusedDep', 'modules.foo.bar.ImportantDep', 'modules.foo.ThereIsNoVariableLikeMe'],
+  $constructor: function() {},
+  $prototype: {
+
+    $dataReady: function() {
+        // comment
+        var SomeDep = "I should not be overriden!"; // note the case difference
+        var otherVar = "other", ParentScript = "I should not be overriden!";
+        var ImportantDep = "I'm not used in the other method but still it's better not to create a module variable like me";
+        this.foo = "foo";
+        this.bar = "bar";
+        modules.foo.bar.ParentScript.something();
+        zzz.someDep.something.method();
+    },
+
+    something: function(param) {
+        var variableInsideSomething = 42;
+        modules.foo.bar.ImportantDep.something(param, "anotherParam");
+        modules.foo.ThereIsNoVariableLikeMe.something();
+    }
+  }
+});

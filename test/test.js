@@ -21,6 +21,7 @@ function validateFile(inputFileName, outputFileName, options) {
         simplifySingleUsage : !!(options.simplifySingleUsage),
         replaceOwnClasspath : !!(options.replaceOwnClasspath),
         removeUnusedImports : !!(options.removeUnusedImports),
+        useShortVarNames    : !!(options.useShortVarNames),
         format              : !!(options.format)
     };
 
@@ -39,6 +40,18 @@ describe('AT-Noder-Converter tests', function () {
     it('works with "remove unused imports" option', function () {
         validateFile('removeUnused.in.txt', 'removeUnused.out.txt', {
             removeUnusedImports : true
+        });
+    });
+
+    it('works with "use short names" option', function () {
+        validateFile('shortVarNames.in.txt', 'shortVarNames.out.txt', {
+            useShortVarNames : true
+        });
+    });
+
+    it('works with "use short names" option when there are conflicts (avoids conflicts)', function () {
+        validateFile('shortVarNamesWithConflicts.in.txt', 'shortVarNamesWithConflicts.out.txt', {
+            useShortVarNames : true
         });
     });
 });
