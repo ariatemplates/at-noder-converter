@@ -1,0 +1,31 @@
+var Aria = require("ariatemplates/Aria");
+var zzzSomeDep = require("zzz/someDep");
+require("./UnusedDep");
+var modulesFooBarImportantDep = require("./ImportantDep");
+var ThereIsNoVariableLikeMe = require("../ThereIsNoVariableLikeMe");
+var modulesFooBarParentScript = require("./ParentScript");
+
+module.exports = Aria.tplScriptDefinition({
+  $classpath: 'modules.foo.bar.TestShortVarNamesWithConflicts',
+  $extends: modulesFooBarParentScript,
+  $constructor: function() {},
+  $prototype: {
+
+    $dataReady: function() {
+        // comment
+        var SomeDep = "I should not be overriden!"; // note the case difference
+        var otherVar = "other", ParentScript = "I should not be overriden!";
+        var ImportantDep = "I'm not used in the other method but still it's better not to create a module variable like me";
+        this.foo = "foo";
+        this.bar = "bar";
+        modulesFooBarParentScript.something();
+        zzzSomeDep.something.method();
+    },
+
+    something: function(param) {
+        var variableInsideSomething = 42;
+        modulesFooBarImportantDep.something(param, "anotherParam");
+        ThereIsNoVariableLikeMe.something();
+    }
+  }
+});

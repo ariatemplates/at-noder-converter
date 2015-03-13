@@ -77,7 +77,13 @@ module.exports = function (UglifyJS) {
         var ariaDefinitionType = null;
         var globals = {};
 
+        // all var names used in methods etc.
+        var varNamesUsedInModule = [];
+
         walker = new UglifyJS.TreeWalker(function (node) {
+            if (node instanceof UglifyJS.AST_VarDef) {
+                varNamesUsedInModule.push(node.name.name);
+            }
             var ariaDefType = checkAriaDefinition(node);
             if (ariaDefType) {
                 if (ariaDefinition) {
@@ -116,6 +122,7 @@ module.exports = function (UglifyJS) {
         }
         this.ariaDefinition = ariaDefinition;
         this.ariaDefinitionType = ariaDefinitionType;
+        this.varNamesUsedInModule = varNamesUsedInModule;
         this.globals = globals;
     };
 
@@ -457,7 +464,7 @@ module.exports = function (UglifyJS) {
     var getMapFromASTObject = function (astObject) {
         var map = {};
         astObject.properties.forEach(function (property) {
-        	map[property.key] = property.value;
+            map[property.key] = property.value;
         });
         return map;
     };
@@ -470,13 +477,25 @@ module.exports = function (UglifyJS) {
     Transformation.prototype.findDependenciesIn$namespaces = findDepsInMap("JS");
 
     Transformation.prototype.createVarName = function (dependency) {
-        return dependency.globalName.replace(/[^a-zA-Z0-9]+/g, "_").split("_").map(function (part, index) {
+        var parts = dependency.globalName.replace(/[^a-zA-Z0-9]+/g, "_").split("_").map(function (part, index) {
             if (index == 0) {
                 return part.charAt(0).toLowerCase() + part.substring(1);
             } else {
                 return part.charAt(0).toUpperCase() + part.substring(1);
             }
-        }).join("");
+        });
+        var lastPart = parts[parts.length - 1];
+        if (this.options.useShortVarNames && this.canVarNameBeUsed(lastPart)) {
+            return lastPart;
+        } else {
+            return parts.join("");
+        }
+    };
+
+    Transformation.prototype.canVarNameBeUsed = function (varName) {
+        // only allow variable names that are not used anywhere inside the module,
+        // to avoid name clashes and shadowing of module variables
+        return this.varNamesUsedInModule.indexOf(varName) == -1;
     };
 
     var createModuleDotExports = function () {
@@ -523,6 +542,7 @@ module.exports = function (UglifyJS) {
         var simplifySingleUsage = this.options.simplifySingleUsage;
         var dependencies = this.dependencies;
         var forceAbsolutePaths = this.options.forceAbsolutePaths;
+        var removeUnusedImports = this.options.removeUnusedImports;
         for (var depName in dependencies) {
             var curDep = dependencies[depName];
             var requireNode;
@@ -553,9 +573,13 @@ module.exports = function (UglifyJS) {
                     }));
                 }, this);
             } else {
-                this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
-                    body : requireNode
-                }));
+                if (removeUnusedImports) {
+                    console.warn("Removing unused dependency '" + requireNode.args[0].value + "' in '" + this.classpath + "'");
+                } else {
+                    this.insertNodeLater(new UglifyJS.AST_SimpleStatement({
+                        body : requireNode
+                    }));
+                }
             }
         }
         if (this.globals.hasOwnProperty(this.classpath) && this.options.replaceOwnClasspath) {
@@ -696,7 +720,7 @@ module.exports = function (UglifyJS) {
         var node = nodeAndParent.node;
         var pos = node.start.pos;
         var sourceText = this.sourceText;
-        this.sourceText = sourceText.substr(0, pos) + "module.exports = " + sourceText.substr(pos);
+        this.sourceText = sourceText.substr(0, pos) + "\nmodule.exports = " + sourceText.substr(pos);
     };
 
     Transformation.prototype.replaceNode = function (nodeAndParent, newNode, stringOperation) {
@@ -778,11 +802,17 @@ module.exports = function (UglifyJS) {
         this.ast.body.splice(0, 0, node);
     };
 
+    Transformation.prototype.handleNewlines = function () {
+        // strip leading newlines
+        this.sourceText = this.sourceText.replace(/^\n+/, "");
+    };
+
     return function (ast, sourceText, options) {
         var scope = new Transformation(ast, sourceText, options);
         scope.findAriaDefAndGlobals();
         scope.findDependencies();
         scope.insertRequires();
+        scope.handleNewlines();
         return scope.sourceText;
     };
 };

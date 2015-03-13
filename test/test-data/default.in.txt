@@ -1,0 +1,19 @@
+Aria.tplScriptDefinition({
+  $classpath: 'modules.foo.bar.TestDefaultOptions',
+  $extends: "modules.foo.bar.ParentScript",
+  $dependencies: ['zzz.someDep', 'modules.foo.bar.UnusedDep', 'modules.foo.bar.ImportantDep'],
+  $constructor: function() {},
+  $prototype: {
+
+    $dataReady: function() {
+        // comment
+        this.foo = "foo";
+        this.bar = "bar";
+        zzz.someDep.something.method();
+    },
+
+    something: function(param) {
+        modules.foo.bar.ImportantDep.something(param, "anotherParam");
+    }
+  }
+});

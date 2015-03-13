@@ -29,7 +29,9 @@ module.exports = function (atpackager) {
         this.options = {
             forceAbsolutePaths : cfg.forceAbsolutePaths,
             simplifySingleUsage : cfg.simplifySingleUsage,
-            replaceOwnClasspath : cfg.replaceOwnClasspath
+            removeUnusedImports : cfg.removeUnusedImports,
+            replaceOwnClasspath : cfg.replaceOwnClasspath,
+            useShortVarNames : cfg.useShortVarNames
         };
     };
 

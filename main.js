@@ -14,32 +14,10 @@
  */
 
 var fs = require("fs");
-var UglifyJS = require("uglify-js");
-var processAST = require("./process")(UglifyJS);
+var processJsString = require("./process-js-string");
 
-module.exports = function (file, options) {
-    var fileContent = fs.readFileSync(file, "utf8");
-    var ast;
-    try {
-        ast = UglifyJS.parse(fileContent, {
-            filename : file
-        });
-    } catch (e) {
-        if (e instanceof UglifyJS.JS_Parse_Error) {
-            throw new Error(e.message + " (line: " + e.line + ", col: " + e.col + ", pos: " + e.pos + ")");
-        }
-        throw e;
-    }
-    fileContent = processAST(ast, fileContent, options);
-
-    if (options.format) {
-        fileContent = ast.print_to_string({
-            comments : true,
-            beautify : true,
-            bracketize : true,
-            ascii_only : true
-        });
-    }
-
-    fs.writeFileSync(file, fileContent);
+module.exports = function (fileName, options) {
+    var fileContent = fs.readFileSync(fileName, "utf8");
+    fileContent = processJsString(fileContent, fileName, options);
+    fs.writeFileSync(fileName, fileContent);
 };
