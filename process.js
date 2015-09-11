@@ -64,7 +64,10 @@ module.exports = function (UglifyJS) {
     var Transformation = function (ast, sourceText, options) {
         this.ast = ast;
         if (sourceText) {
-            sourceText = sourceText.replace(/\r\n?|[\n\u2028\u2029]/g, "\n").replace(/\uFEFF/g, '');
+            // makes sure sourceText is exactly the same as the text Uglify uses
+            // when tokenizing, so that changes using positions in the string,
+            // as performed by insertNodeInString, are accurate
+            sourceText = UglifyJS.tokenizer(sourceText).context().text;
             this.sourceText = sourceText;
         }
         this.options = options || {};
